@@ -1,1 +1,19 @@
-{}
+{
+  "version": 2,
+  "name": "skillmatrix",
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@now/node-server"
+    },
+    {
+      "src": "next.config.js",
+      "use": "@now/next"
+    },
+    {
+      "src": "static/*",
+      "use": "@now/static"
+    }
+  ]
+  
+}

@@ -11,7 +11,7 @@ import ProfileInfo from "./ProfileInfo";
 class MainDash extends Component {
 
     state = {
-        activeItem: 'JavaScript', // TODO Set the first one for default
+        activeItem: '',
         isLoading: false,
         value: '' // Value of the search Field
     };
@@ -25,6 +25,18 @@ class MainDash extends Component {
         this.props.skillsFetch();
     }
 
+    componentWillReceiveProps(nextProps, nextContext) {
+        const {skills} = this.props;
+        const {activeItem} = this.state;
+
+        if (skills.length === 0 && nextProps.skills.length > 0) {
+            this.setState({activeItem: nextProps.skills[0].name})
+        }
+        if (skills.length > 0 && activeItem === '') {
+            this.setState({activeItem: skills[0].name})
+        }
+    }
+
 
     handleResultSelect = (e, {result}) => this.setState({activeItem: result.name, value: result.name});
     resetComponent = () => this.setState({isLoading: false, results: [], value: ''});
@@ -36,8 +48,8 @@ class MainDash extends Component {
             if (this.state.value.length < 1) return this.resetComponent();
 
             const re = new RegExp(_.escapeRegExp(this.state.value), 'i');
-            const isMatch = result => re.test(result.name);
-
+            const isMatch = result => re.test(result.name) || Object.values(result.technologies).some( (tech) => re.test(tech.name))
+skillsFetch,
             this.setState({
                 isLoading: false,
                 results: _.filter(skills, isMatch),
@@ -47,6 +59,7 @@ class MainDash extends Component {
 
     render() {
         const {isLoading, results, value, activeItem} = this.state;
+        const {skills} = this.props;
         const resultRenderer = ({name}) => <Label content={name} color='blue' onClick={this.handleItemClick}/>;
 
         return (
@@ -55,7 +68,7 @@ class MainDash extends Component {
                 <Divider/>
                 <Menu attached='top' pointing secondary pagination>
                     <MenuItems
-                        items={this.props.skills}
+                        items={skills}
                         activeItem={activeItem}
                         handleItemClick={this.handleItemClick}
                     />
@@ -87,12 +100,8 @@ class MainDash extends Component {
 
 const mapStateToProps = state => {
 
-    const skills = _.map(state.fireBase.skills, (val, uid) => {
-        return {...val, key: uid, title: ''}; // {shift: 'Monday', name:'s', id:'1j2j34'};
-    });
-
     return {
-        skills,
+        skills: state.fireBase.skills,
         loading: !!state.fireBase.loading
     };
 };

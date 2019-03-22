@@ -14,9 +14,7 @@ class SkillsIndex extends Component {
         openModalNewSkill: false
     }
 
-    static async getInitialProps(props) {
-          return {};
-    }
+
 
     renderRow() {
         return this.props.skills.map((skill, index) => {
@@ -46,7 +44,10 @@ class SkillsIndex extends Component {
 
 
                 <Grid centered celled columns='equal'>
-                    <Grid.Row color='grey' columns={5}>
+                    <Grid.Row color='grey' columns={6}>
+                        <Grid.Column textAlign='center'  width={1}>
+                            <h3>+/-</h3>
+                        </Grid.Column>
                         <Grid.Column textAlign='center'  width={2}>
                             <h3>ID</h3>
                         </Grid.Column>
@@ -79,13 +80,9 @@ class SkillsIndex extends Component {
 
 const mapStateToProps = state => {
 
-    const skills = _.map(state.fireBase.skills, (val, uid) => {
-        return {...val, key: uid}; // {shift: 'Monday', name:'s', id:'1j2j34'};
-    });
-
     return {
         ...state,
-        skills,
+        skills: state.fireBase.skills,
         loading: state.fireBase.loading
     };
 };

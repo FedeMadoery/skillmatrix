@@ -4,9 +4,19 @@ import {
     FETCH_SKILLS,
     START_TRANSACTION,
     SKILL_UPDATE,
-    FETCH_USER_DATA, UPDATE_USER_DATA, EMPTY_ACTION, END_TRANSACTION
+    FETCH_USERS,
+    FETCH_USER_DATA,
+    UPDATE_USER_DATA,
+    EMPTY_ACTION,
+    END_TRANSACTION,
+    CLEAN_DATA,
+    SELECT_TECH_TO_SEARCH,
+    REMOVE_TECH_TO_SEARCH, RESET_TECH_TO_SEARCH
 } from "./types";
 import firebase from '../../firebase'
+import "firebase/auth"
+import _ from "lodash";
+
 
 export const skillUpdates = ({prop, value}) => {
     return {
@@ -17,7 +27,6 @@ export const skillUpdates = ({prop, value}) => {
 
 
 export const skillCreate = ({name, description}) => {
-    const {currentUser} = firebase.auth();
     return (dispatch) => {
         firebase.database().ref(`/skills/`)
             .push({name, description})
@@ -29,7 +38,6 @@ export const skillCreate = ({name, description}) => {
 };
 
 export const skillUpdate = ({name, description, uid}) => {
-    const {currentUser} = firebase.auth();
     return (dispatch) => {
         firebase.database().ref(`/skills/${uid}`)
             .update({name, description})
@@ -42,7 +50,6 @@ export const skillUpdate = ({name, description, uid}) => {
 };
 
 export const skillDelete = ({uid}) => {
-    const {currentUser} = firebase.auth();
     return () => {
         firebase.database().ref(`/skills/${uid}`)
             .remove()
@@ -53,7 +60,6 @@ export const skillDelete = ({uid}) => {
 };
 
 export const technologiesCreate = ({name, description, meta, uid}) => {
-    const {currentUser} = firebase.auth();
     return (dispatch) => {
         firebase.database().ref(`/skills/${uid}/technologies`)
             .push({name, description, meta})
@@ -64,8 +70,18 @@ export const technologiesCreate = ({name, description, meta, uid}) => {
 
 };
 
+export const technologiesUpdate = ({name, description, meta, uidSkill, uid}) => {
+    return (dispatch) => {
+        firebase.database().ref(`/skills/${uidSkill}/technologies/${uid}`)
+            .update({name, description, meta})
+            .then(() => {
+                dispatch({type: TECHNOLOGIES_CREATE});
+            });
+    }
+
+};
+
 export const technologiesDelete = ({uid, tuid}) => {
-    const {currentUser} = firebase.auth();
     return () => {
         firebase.database().ref(`/skills/${uid}/technologies/${tuid}`)
             .remove()
@@ -81,7 +97,10 @@ export const skillsFetch = () => {
         dispatch({type: START_TRANSACTION});
         firebase.database().ref(`/skills`)
             .on('value', snapshot => {
-                dispatch({type: FETCH_SKILLS, payload: snapshot.val()});
+                const skills = _.map(snapshot.val(), (val, uid) => {
+                    return {...val, key: uid, title: ''}; // {shift: 'Monday', name:'s', id:'1j2j34'};
+                });
+                dispatch({type: FETCH_SKILLS, payload: skills});
                 dispatch({type: END_TRANSACTION})
             });
     };
@@ -89,9 +108,8 @@ export const skillsFetch = () => {
 
 
 export const userDataFetch = () => {
-    const {currentUser} = firebase.auth();
-    if (!currentUser) return {type: EMPTY_ACTION};
-    return (dispatch) => {
+    return (dispatch, getState) => {
+        const currentUser = getState().auth.user;
         dispatch({type: START_TRANSACTION});
         firebase.database().ref(`/users/${currentUser.uid}`)
             .on('value', snapshot => {
@@ -102,9 +120,8 @@ export const userDataFetch = () => {
 };
 
 export const userTechnologyUpdate = (technology, tuid) => {
-    const {currentUser} = firebase.auth();
-    if (!currentUser) return {type: EMPTY_ACTION};
-    return (dispatch) => {
+    return (dispatch, getState) => {
+        const currentUser = getState().auth.user;
         firebase.database().ref(`/users/${currentUser.uid}/technologies/${tuid}`)
             .update(technology)
             .then(() => {
@@ -117,9 +134,8 @@ export const userTechnologyUpdate = (technology, tuid) => {
 };
 
 export const userDataUpdate = (data) => {
-    const {currentUser} = firebase.auth();
-    if (!currentUser) return {type: EMPTY_ACTION};
-    return (dispatch) => {
+    return (dispatch, getState) => {
+        const currentUser = getState().auth.user;
         dispatch({type: START_TRANSACTION});
         firebase.database().ref(`/users/${currentUser.uid}`)
             .update(data)
@@ -131,3 +147,33 @@ export const userDataUpdate = (data) => {
             });
     }
 };
+
+export const usersFetch = () => {
+    return (dispatch) => {
+        dispatch({type: START_TRANSACTION});
+        firebase.database().ref(`/users`)
+            .on('value', snapshot => {
+                dispatch({type: FETCH_USERS, payload: snapshot.val()});
+                dispatch({type: END_TRANSACTION})
+            });
+
+    }
+};
+
+export const onSelectTechToSearch = (uid) => {
+    return (dispatch) => {
+        dispatch({type: SELECT_TECH_TO_SEARCH, payload: uid})
+    }
+};
+
+export const onRemoveTechToSearch = (uid) => {
+    return (dispatch) => {
+        dispatch({type: REMOVE_TECH_TO_SEARCH, payload: uid})
+    }
+};
+export const onResetTechToSearch = () => {
+    return (dispatch) => {
+        dispatch({type: RESET_TECH_TO_SEARCH})
+    }
+};
+

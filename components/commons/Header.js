@@ -9,29 +9,45 @@ const _header = (props) => {
     //state = {}
 
     const ROUTES = {
-        home: '/index',
-        skills: '/skills'
+        home: '/',
+        employees: '/employees',
+        ethereum: '/ethereum'
     };
 
 
     const handleItemClick = (e, {name}) => Router.pushRoute(ROUTES[name.toLowerCase()]);
 
+    const enabled = () => {
+
+        return props.user.roles.includes('ethereum');
+    }
+
 
     return (
         <Menu style={{marginTop: '10px'}} size='small'>
             <Menu.Item active={ROUTES.home === props.router.asPath}
-                       onClick={handleItemClick} name='Home' />
+                       onClick={handleItemClick} name='Home'/>
 
             <Menu.Menu position="right">
-                <Menu.Item active={ROUTES.skills === props.router.asPath}
-                           onClick={handleItemClick} name='Skills' />
+                {
+                    props.user.roles && enabled() ?
+                        <Menu.Item active={ROUTES.ethereum === props.router.asPath}
+                                   onClick={handleItemClick} name='Ethereum'/> : ''
+                }
+                {
+                    (props.user.roles && enabled()) && (
+                        <>
+                            <Menu.Item active={ROUTES.employees === props.router.asPath}
+                                       onClick={handleItemClick} name='Employees'/>
+                            < Link route="/skill/index">
+                                <a className="item">Administration</a>
+                            </Link>
+                        </>
+                    )
+                }
 
-                <Link route="/skill/index">
-                    <a className="item">+</a>
-                </Link>
-
-                <Menu.Item active={ROUTES.skills === props.router.asPath}
-                           onClick={props.logoutUser} >
+                <Menu.Item active={ROUTES.employess === props.router.asPath}
+                           onClick={props.logoutUser}>
                     Logout
                     <Icon name='user secret'></Icon>
                 </Menu.Item>
@@ -43,7 +59,11 @@ const _header = (props) => {
 
 
 const mapStateToProps = (state) => {
-    return {...state.router}
+
+    return {
+        ...state.router,
+        user: state.auth.user
+    }
 }
 
 export default withRouter(connect(mapStateToProps, {skillCreate, logoutUser})(_header));

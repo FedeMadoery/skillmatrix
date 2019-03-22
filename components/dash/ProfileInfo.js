@@ -1,33 +1,35 @@
 import React, {Component} from "react";
 import {connect} from "react-redux";
 import {Button, Form, Grid, Image} from "semantic-ui-react";
-import {getLargeImage} from "../utils/imagesManager";
 import {userDataUpdate} from "../../redux/actions";
 
 class _profileInfo extends Component {
 
     state = {
-        displayName: this.props.userData ? this.props.userData.name || '' : this.props.user.displayName || '',
-        position: this.props.userData ? this.props.userData.position : '',
-        yearsOfExperience: this.props.userData ? this.props.userData.yearsOfExperience : '',
+        displayName: this.props.user.displayName,
+        position: this.props.user.position,
+        yearsOfExperience:this.props.userData && this.props.userData.yearsOfExperience || '',
         email: this.props.user.email,
+        photoURL: this.props.user.photoURL
     };
 
     componentWillReceiveProps(nextProps, nextContext) {
         const {userData} = this.props;
-        if(nextProps.userData && (!userData || userData.position !== nextProps.userData.position)) {
+        if (nextProps.userData && (!userData || userData.position !== nextProps.userData.position)) {
             this.setState({
-                displayName: nextProps.userData ? nextProps.userData.name || undefined : nextProps.user.displayName || undefined,
+                displayName: nextProps.userData ? nextProps.userData.displayName || undefined : nextProps.user.displayName || undefined,
                 position: nextProps.userData ? nextProps.userData.position : '',
-                yearsOfExperience: nextProps.userData ? nextProps.userData.yearsOfExperience : undefined,
+                yearsOfExperience: nextProps.userData ? nextProps.userData.yearsOfExperience : '',
                 email: nextProps.user.email,
+                photoURL: nextProps.user.photoURL
             })
         }
     }
 
-    updateUserData() {
+    updateUserData = () => {
         const {displayName, position, yearsOfExperience, email} = this.state;
-        this.props.userDataUpdate({displayName, position, yearsOfExperience, email});
+        const {photoURL} = this.props.user;
+        this.props.userDataUpdate({displayName: displayName || null, position: position || null, yearsOfExperience: yearsOfExperience || null, email, photoURL});
     };
 
     positionItems() {
@@ -38,13 +40,20 @@ class _profileInfo extends Component {
     };
 
 
+    setDisplayName(value) {
+        this.setState({displayName: value});
+    }
 
-    setDisplayName(value) {this.setState({displayName: value});}
-    setPosition(value) {this.setState({position: value});}
-    setYearsOfExperience(value) {this.setState({yearsOfExperience: value});}
+    setPosition(value) {
+        this.setState({position: value});
+    }
+
+    setYearsOfExperience(value) {
+        this.setState({yearsOfExperience: value});
+    }
 
     render() {
-        const {displayName, position, yearsOfExperience } = this.state;
+        const {displayName, position, yearsOfExperience, photoURL} = this.state;
         return (
             <>
                 <h1>Profile Info</h1>
@@ -54,7 +63,8 @@ class _profileInfo extends Component {
                     <Grid columns={2}>
                         <Grid.Row stretched>
                             <Grid.Column width={6}>
-                                <Image src={this.props.user.photoURL || getLargeImage()} size='medium' circular/>
+                                <Image src={photoURL} size='medium'
+                                       circular/>
                             </Grid.Column>
                             <Grid.Column width={9}>
                                 <Form.Field disabled={true}>
@@ -95,14 +105,16 @@ class _profileInfo extends Component {
                                         onChange={(e, {value}) => this.setYearsOfExperience(value)}
                                     />
                                     <datalist id='experience'>
-                                        <option value='1 Year'/>
+                                        <option value='<1 Year'/>
+                                        <option value='1+ Year'/>
+                                        <option value='3+ Years'/>
                                         <option value='5+ Years'/>
                                         <option value='10+ Years'/>
                                     </datalist>
                                 </Form.Group>
 
                                 <Button color='blue' basic loading={this.props.loading}
-                                        onClick={this.updateUserData}>
+                                        onClick={() => this.updateUserData()}>
                                     Save
                                 </Button>
                             </Grid.Column>

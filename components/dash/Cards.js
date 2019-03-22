@@ -1,6 +1,6 @@
 import React, {Component} from "react";
 import {connect} from "react-redux";
-import {Card, Dropdown, Icon, Label, Popup} from 'semantic-ui-react';
+import {Card, Checkbox, Dropdown, Icon, Label, Popup} from 'semantic-ui-react';
 import {getSmallImage} from "../utils/imagesManager";
 import _ from "lodash";
 import {userTechnologyUpdate} from "../../redux/actions";
@@ -10,6 +10,13 @@ class Cards extends Component {
     state = {
         technologies: []
     };
+
+    style = {
+        borderRadius: 0,
+        opacity: 0.7,
+        padding: '2em',
+    }
+
 
     componentDidMount() {
         const {skillSelected} = this.props;
@@ -25,7 +32,7 @@ class Cards extends Component {
             ? _.map(_skillSelected.technologies,
                 (item, uid) => {
                     if (userTechnologyData[uid]) return {...item, uid, ...userTechnologyData[uid]};
-                    return {...item, uid, levelOfKnowledge: {}}
+                    return {...item, uid, levelOfKnowledge: {text: 'Level of knowledge', value: -1, color: 'grey'}, wantToLearn: false}
                 })
             : [{name: '', meta: '', description: 'Technologies not found'}];
 
@@ -46,7 +53,17 @@ class Cards extends Component {
                 ...state,
                 technologies: state.technologies.map(
                     (content, i) => i === index
-                        ? {...content, levelOfKnowledge: value}
+                        ? {
+                            ...content,
+                            levelOfKnowledge: value,
+                            validated: technologies[index].validated || false,
+                            wantToLearn: technologies[index].wantToLearn || false,
+                            validator:
+                            //If value is -1, no validator needed - Else assign a validator of that tech or 'Not assigned'
+                                value.value === -1
+                                    ? null
+                                    : technologies[index].validator || {name: 'Not assigned', position: '', uid: ''},
+                        }
                         : content
                 )
             }
@@ -54,12 +71,53 @@ class Cards extends Component {
         this.props.userTechnologyUpdate(
             {
                 validated: technologies[index].validated || false,
-                validator: technologies[index].validator || {name: 'Not assigned', position: '', uid: ''},
-                levelOfKnowledge: value
+                validator:
+                    value.value === -1
+                        ? null
+                        : technologies[index].validator || {name: 'Not assigned', position: '', uid: ''},
+                levelOfKnowledge: value,
+                wantToLearn: technologies[index].wantToLearn || false
             }
             , technologies[index].uid
         )
     };
+
+    levelOfKnowledgeItems(technologyIndex) {
+        const items = [
+            {text: 'Level of knowledge', value: -1, color: 'grey'},
+            {text: '< 6 meses', value: 0, color: 'red'},
+            {text: '6 meses a 1 año', value: 1, color: 'teal'},
+            {text: '1 año a 3 años', value: 2, color: 'blue'},
+            {text: '> 3 años', value: 3, color: 'violet'},
+            /*{text: 'Lo conoce bien', value: 4, color: 'orange'},
+            {text: 'Experto', value: 5, color: 'green'}*/
+        ];
+        return items.map((item, index) =>
+            <Dropdown.Item label={{color: item.color, empty: true, circular: true}}
+                           text={item.text} value={item.value} key={item + index}
+                           onClick={(e, {text, value, label}) =>
+                               this.onOptionClick(technologyIndex, {text, value, color: label.color})
+                           }
+            />
+        )
+    }
+
+    onClickWantToLearn(index, value) {
+        const {technologies} = this.state;
+        this.setState((state) => {
+            return {
+                ...state,
+                technologies: state.technologies.map(
+                    (content, i) => i === index ? {...content, wantToLearn: value} : content)
+            }
+        });
+        this.props.userTechnologyUpdate({
+            validated: technologies[index].validated || false,
+            validator: technologies[index].validator || null,
+            levelOfKnowledge: technologies[index].levelOfKnowledge || {text: 'Level of knowledge', value: -1, color: 'grey'},
+            wantToLearn: value
+        }, technologies[index].uid)
+    }
 
     render() {
         const {technologies} = this.state;
@@ -73,8 +131,18 @@ class Cards extends Component {
                             <Card.Meta>
                                 <span className='date'>{item.meta}</span>
                             </Card.Meta>
-                            <Card.Description>{item.description}</Card.Description>
-
+                            <Card.Description style={{minHeight: '90px'}}>
+                                {item.description.slice(0, 185)}
+                                {(item.description.length > 185) ?
+                                    <Popup style={this.style}
+                                           inverted
+                                           trigger={
+                                               <span style={{color: 'blue'}}>
+                                                   ...Ver mas
+                                               </span>
+                                           } content={item.description}/>
+                                    : ''}
+                            </Card.Description>
                             <br/>
                             {item.levelOfKnowledge &&
                             <Dropdown text={item.levelOfKnowledge.text || 'Level of knowledge'}
@@ -82,33 +150,16 @@ class Cards extends Component {
                                       floating labeled button basic
                                       value={item.levelOfKnowledge.value}>
                                 <Dropdown.Menu>
-                                    <Dropdown.Item label={{color: 'green', empty: true, circular: true}}
-                                                   text='I want to learn this' value={0}
-                                                   onClick={(e, {text, value, label}) =>
-                                                       this.onOptionClick(index, {text, value, color: label.color})
-                                                   }
-                                    />
-                                    <Dropdown.Item label={{color: 'teal', empty: true, circular: true}}
-                                                   text='Basic' value={1}
-                                                   onClick={(e, {text, value, label}) =>
-                                                       this.onOptionClick(index, {text, value, color: label.color})
-                                                   }
-                                    />
-                                    <Dropdown.Item label={{color: 'blue', empty: true, circular: true}}
-                                                   text='Intermediate' value={2}
-                                                   onClick={(e, {text, value, label}) =>
-                                                       this.onOptionClick(index, {text, value, color: label.color})
-                                                   }
-                                    />
-                                    <Dropdown.Item label={{color: 'violet', empty: true, circular: true}}
-                                                   text='Advanced' value={3}
-                                                   onClick={(e, {text, value, label}) =>
-                                                       this.onOptionClick(index, {text, value, color: label.color})
-                                                   }
-                                    />
+                                    {this.levelOfKnowledgeItems(index)}
                                 </Dropdown.Menu>
                             </Dropdown>
                             }
+
+                            <Checkbox style={{marginLeft: '1.5rem'}}
+                                      label={<label>Interested?</label>}
+                                      onChange={(e, {checked}) => this.onClickWantToLearn(index, checked)}
+                                      checked={item.wantToLearn}
+                            />
 
                         </Card.Content>
                         {item.validator &&
@@ -130,12 +181,9 @@ class Cards extends Component {
 };
 
 function mapStateToProps(state) {
-    const skills = _.map(state.fireBase.skills, (val, uid) => {
-        return {...val, key: uid, title: ''}; // {shift: 'Monday', name:'s', id:'1j2j34'};
-    });
 
     return {
-        skills,
+        skills: state.fireBase.skills,
         loading: state.fireBase.loading,
         userTechnologyData: state.fireBase.userData ? state.fireBase.userData.technologies || {} : {}
     };
